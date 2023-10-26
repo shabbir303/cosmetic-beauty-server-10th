@@ -4,6 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 
+
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -12,6 +13,7 @@ app.use(express.json());
 
 console.log(process.env.DB_USER);
 console.log(process.env.DB_PASS);
+
 
 
 // const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zm5ln60.mongodb.net/?retryWrites=true&w=majority`;
@@ -30,84 +32,89 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
-  
+
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    
-    await client.connect();
-    
-    const cosmeticCollection = client.db("userDB").collection("beauties");
-    const cartCollection = client.db("userDB").collection("carts");
 
-    app.get('/beauties', async(req,res)=>{
-     const cursor = cosmeticCollection.find();
-     const result = await cursor.toArray();
-     res.send(result);
+    await client.connect();
+
+    const cosmeticCollection = client.db("userDB").collection("beauties");
+    // const cartCollection = client.db("userDB").collection("carts");
+
+    app.get('/beauties', async (req, res) => {
+      const cursor = cosmeticCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
     })
 
-    app.get('/beauties/:id', async(req,res)=>{
+    app.get('/beauties/:id', async (req, res) => {
       const id = req.params.id;
-      const query ={_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await cosmeticCollection.findOne(query);
       res.send(result);
     })
 
-    app.put('/beauties/:id', async(req,res)=>{
+    app.put('/beauties/:id', async (req, res) => {
       const id = req.params.id;
-      const filter ={_id: new ObjectId(id)};
-      const options =  {upsert: true};
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
       const updatedProducts = req.body;
       const products = {
-        $set:{
-          image:updatedProducts.image,
+        $set: {
+          image: updatedProducts.image,
           name: updatedProducts.name,
-          brand:updatedProducts.brand,
-          type:updatedProducts.type,
-          price:updatedProducts.price,
-          describe:updatedProducts.describe,
-          rating:updatedProducts.rating
+          brand: updatedProducts.brand,
+          type: updatedProducts.type,
+          price: updatedProducts.price,
+          describe: updatedProducts.describe,
+          rating: updatedProducts.rating
         }
       }
-      const result = await cosmeticCollection.updateOne(filter, options, products);
+      const result = await cosmeticCollection.updateOne(filter,products, options, );
       res.send(result);
     })
 
-    app.post('/beauties', async(req,res)=>{
+    app.post('/beauties', async (req, res) => {
       const addProduct = req.body;
       console.log(addProduct);
       const result = await cosmeticCollection.insertOne(addProduct);
       res.send(result);
     })
 
-  //   app.get('/cart', async(req,res)=>{
-  //      try{
-  //        const email = req.query.email;
-  //        if(!email){
-  //         return res.status(200).json([]);
-  //       }
-  //     }
-  //     catch(err){
+
+    // cart
+    const cartCollection = client.db("userDB").collection("carts");
+    app.get('/cart', async (req, res) => {
+      const email = req.query.email;
      
-  //   }
-  // })
+      const query = { email: email };
+      console.log(query, req.query);
+      const carts = await cartCollection.find(query).toArray();
+      res.send(carts);
+    })
 
     app.post('/cart', async (req, res) => {
-      
+
       try {
         const cardItemData = req.body;
-        const newCardItem = await cartCollection.insertOne(cardItemData) 
+        console.log(cardItemData);
+        const newCardItem = await cartCollection.insertOne(cardItemData)
         res.send(newCardItem)
-        
-        }
-    
-        // Check if the product already exists in the cart
-        
-    
-       
-       catch (error) {
+
+      }
+      catch (error) {
         res.send(error);
       }
     });
+
+    // user Apis
+    // const userCollection = client.db('userDB').collection("users");
+    // app.post('/user', async (req, res) => {
+    //   const user  = req.body;
+    //   const result =await userCollection.isertOne(user.email);
+    //   res.send(result);
+    // })
+    
 
 
 
@@ -122,11 +129,11 @@ async function run() {
 run().catch(console.dir);
 
 
-app.get('/', (req,res)=>{
- res.send('My server is running')
+app.get('/', (req, res) => {
+  res.send('My server is running')
 });
 
-app.listen(port,()=>{
+app.listen(port, () => {
   console.log(`My server is running on port: ${port}`);
 })
 
